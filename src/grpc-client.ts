@@ -36,6 +36,7 @@ type GrpcUnaryClient = Record<
 // LoadedGrpcServices groups the vulcan-host gRPC service clients used by this extension.
 // LoadedGrpcServices 汇总该扩展使用的 vulcan-host gRPC 服务客户端。
 interface LoadedGrpcServices {
+  mcp: GrpcUnaryClient;
   hostAdapter: GrpcUnaryClient;
   vmm: GrpcUnaryClient;
 }
@@ -61,10 +62,10 @@ export class DynamicGrpcVulcanHostClient {
   // 构造函数保存归一化配置，让服务加载保持惰性且低成本。
   constructor(private readonly config: ResolvedVulcanQwencodeConfig) {}
 
-  // health checks the VMM gRPC health endpoint.
-  // health 检查 VMM gRPC 健康端点。
+  // health checks whether the MCP service is alive and reports its version.
+  // health 检查 MCP 服务是否存活并读取其版本信息。
   async health(): Promise<VulcanStatus> {
-    const response = await this.callUnary<Record<string, unknown>>(this.loadServices().vmm, "Healthz", {});
+    const response = await this.callUnary<Record<string, unknown>>(this.loadServices().mcp, "Healthz", {});
     return {
       ok: response.status === "ok",
       message: String(response.status ?? "unknown"),
@@ -357,6 +358,9 @@ export class DynamicGrpcVulcanHostClient {
     const loaded = grpc.loadPackageDefinition(packageDefinition) as Record<string, unknown>;
     const namespace = (((loaded.vulcan as Record<string, unknown>)?.mcp as Record<string, unknown>)?.v1 ??
       {}) as Record<string, unknown>;
+    const McpService = namespace.McpService as
+      | (new (target: string, credentials: grpc.ChannelCredentials) => GrpcUnaryClient)
+      | undefined;
     const HostAdapterService = namespace.HostAdapterService as
       | (new (target: string, credentials: grpc.ChannelCredentials) => GrpcUnaryClient)
       | undefined;
@@ -364,12 +368,13 @@ export class DynamicGrpcVulcanHostClient {
     const VMMService = vmmNamespace.VMMService as
       | (new (target: string, credentials: grpc.ChannelCredentials) => GrpcUnaryClient)
       | undefined;
-    if (!HostAdapterService || !VMMService) {
-      throw new Error("vulcan-host proto does not expose HostAdapterService and VMMService.");
+    if (!McpService || !HostAdapterService || !VMMService) {
+      throw new Error("vulcan-host proto does not expose McpService, HostAdapterService, and VMMService.");
     }
     const endpoint = normalizeGrpcEndpoint(this.config.endpoint);
     const credentials = grpc.credentials.createInsecure();
     this.services = {
+      mcp: new McpService(endpoint, credentials),
       hostAdapter: new HostAdapterService(endpoint, credentials),
       vmm: new VMMService(endpoint, credentials),
     };
