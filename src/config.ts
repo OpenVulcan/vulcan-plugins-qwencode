@@ -249,13 +249,10 @@ export async function resolvePluginConfig(cwd?: string | undefined): Promise<Res
 export function buildConfigTemplate(): string {
   const template: VulcanQwencodePluginConfig = {
     endpoint: DEFAULT_ENDPOINT,
-    protoPath: "D:/projects/vulcan-mcp-client/proto/v1/mcp_service.proto",
     enabled: true,
     host: {
       autoStart: false,
-      command: "D:/projects/vulcan-mcp-client/output/bin/vulcan-agent-service.exe",
       args: [],
-      cwd: "D:/projects/vulcan-mcp-client/output",
       readyTimeoutMs: DEFAULT_HOST_READY_TIMEOUT_MS,
       env: {},
     },

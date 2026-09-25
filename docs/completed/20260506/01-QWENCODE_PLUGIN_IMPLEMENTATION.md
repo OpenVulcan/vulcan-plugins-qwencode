@@ -1,11 +1,11 @@
 # 任务目标
 
-在 `vulcan-plugins-qwencode` 仓库中实现面向 QwenCode 宿主的 Vulcan 插件，参考当前 `vulcan-plugins-opencode` 与同级 `vulcan-plugins-openclaw` 的成熟能力，尽可能完整地落地记忆检索、写回、配置加载、宿主适配、工具桥接、诊断与文档说明。同时拉取 `D:\projects\qwen-code` 最新代码，确保实现与当前宿主接口形态保持一致。
+在 `vulcan-plugins-qwencode` 仓库中实现面向 QwenCode 宿主的 Vulcan 插件，参考 `vulcan-plugins-opencode` 与 `vulcan-plugins-openclaw` 的成熟能力，尽可能完整地落地记忆检索、写回、配置加载、宿主适配、工具桥接、诊断与文档说明。同时核对 Qwen Code 当前代码，确保实现与宿主接口形态保持一致。
 
 # 详细执行步骤
 
 1. 盘点 `vulcan-plugins-qwencode` 当前仓库状态，确认现有文件、构建基础与缺失内容。
-2. 更新 `D:\projects\qwen-code` 到最新代码，并梳理插件加载、事件生命周期、配置入口、工具扩展与命令面板相关实现。
+2. 更新并梳理 Qwen Code 源码，了解插件加载、事件生命周期、配置入口、工具扩展与命令面板相关实现。
 3. 对照 `vulcan-plugins-opencode` 的业务链路，识别可以直接复用的领域逻辑、配置模型、gRPC 交互层与状态管理组件。
 4. 对照 `vulcan-plugins-openclaw` 的宿主适配方式，提炼适用于 QwenCode 的宿主桥接、事件解析、消息提取与命令入口实现。
 5. 在 `vulcan-plugins-qwencode` 中建立完整工程骨架，包括源码目录、TypeScript 配置、构建脚本、入口文件与必要依赖。
@@ -37,7 +37,7 @@
 
 - 已在 `vulcan-plugins-qwencode` 内完成面向 `Qwen Code` 的 Vulcan 插件工程落地，采用 `Qwen Extension + hooks + gRPC` 作为主链路，而非以 MCP 工具注册作为主执行面。
 - 已对齐 `qwen-code` 最新接口形态，完成 `SessionStart`、`UserPromptSubmit`、`Stop`、`StopFailure`、`PostCompact`、`SessionEnd` 的 hooks 编排，实现画像注入、记忆召回、回合闭合写回与压缩同步。
-- 已接入 `vulcan-mcp-client` 中的 gRPC 协议定义，完成 `health`、运行时构建、用户/项目解析、pre-check、post-action、compact 等关键能力调用。
+- 已将 Vulcan gRPC 协议定义随插件分发，完成 `health`、运行时构建、用户/项目解析、pre-check、post-action、compact 等关键能力调用。
 - 已补齐本地安装脚本、CLI 会话状态导出能力、README 安装与联调文档，以及 `.gitignore` 等工程化基础收尾。
 
 ## 2. 📂文件变更清单

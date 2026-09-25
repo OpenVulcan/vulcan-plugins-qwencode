@@ -19,6 +19,7 @@
 - `commands/`：插件注册的帮助命令
 - `skills/`：插件注册的技能说明
 - `src/`：TypeScript 运行时代码
+- `proto/v1/`：随插件分发的 gRPC 协议定义
 
 ## 配置方式
 
@@ -33,12 +34,19 @@
 
 - `VULCAN_HOST_GRPC_ENDPOINT`
 - `VULCAN_HOST_PROTO_PATH`
+- `VULCAN_QWENCODE_HOST_AUTOSTART`
+- `VULCAN_HOST_COMMAND`
+- `VULCAN_HOST_COMMAND_ARGS`
+- `VULCAN_HOST_CWD`
 - `VULCAN_VMM_DEFAULT_USER_ID`
 - `VULCAN_VMM_DEFAULT_PROJECT_ID`
 - `VULCAN_QWENCODE_ENABLED`
 - `VULCAN_QWENCODE_MEMORY_ENABLED`
 - `VULCAN_QWENCODE_AUTO_RECALL`
 - `VULCAN_QWENCODE_AUTO_POSTACTION`
+
+扩展已内置所需的 gRPC 协议文件，通常不需要设置 `VULCAN_HOST_PROTO_PATH`。使用记忆与 Vulcan 宿主能力仍需连接可用的 `vulcan-host` gRPC 服务；默认地址为 `127.0.0.1:19202`。
+默认不会尝试启动宿主程序。若要由扩展启动，请显式设置 `VULCAN_QWENCODE_HOST_AUTOSTART=true` 和当前机器上的 `VULCAN_HOST_COMMAND`；可按需提供启动参数与工作目录。
 
 ## 本地开发
 
@@ -61,25 +69,32 @@ npm run install:qwen-local
 该脚本会先构建 `dist/`，再调用：
 
 ```powershell
-qwen extensions install D:\projects\vulcan-plugins-qwencode
+qwen extensions install .
 ```
 
 ### 方式二：手动安装本地路径
 
 ```powershell
-qwen extensions install D:\projects\vulcan-plugins-qwencode
+qwen extensions install .
 ```
 
-### 方式三：从 Git 仓库安装
+请在插件仓库根目录运行此命令。
+
+### 方式三：从 Git 源码安装
 
 ```powershell
-qwen extensions install <git-repo-or-owner/repo>
+git clone https://github.com/OpenVulcan/vulcan-plugins-qwencode.git
+Set-Location vulcan-plugins-qwencode
+npm install
+npm run install:qwen-local
 ```
+
+这组步骤会先安装 gRPC 运行依赖并编译 TypeScript，再执行 Qwen 扩展安装，确保源码树中已有运行所需的依赖与 `dist/` 产物。
 
 ## 本地安装到 Qwen Code
 
 ```powershell
-qwen extensions install D:\projects\vulcan-plugins-qwencode
+qwen extensions install .
 ```
 
 安装后，Qwen 会把扩展复制到：
@@ -91,8 +106,8 @@ qwen extensions install D:\projects\vulcan-plugins-qwencode
 构建完成后，可直接在仓库里执行：
 
 ```powershell
-node .\dist\cli.js status --cwd D:\projects\your-project
-node .\dist\cli.js doctor --cwd D:\projects\your-project --session-id demo-session
+node ./dist/cli.js status --cwd .
+node ./dist/cli.js doctor --cwd . --session-id demo-session
 node .\dist\cli.js dump-session-state --session-id demo-session
 node .\dist\cli.js print-config-template
 ```
@@ -100,8 +115,8 @@ node .\dist\cli.js print-config-template
 也可以通过 `npm run` 包装脚本执行：
 
 ```powershell
-npm run status -- --cwd D:\projects\your-project
-npm run doctor -- --cwd D:\projects\your-project --session-id demo-session
+npm run status -- --cwd .
+npm run doctor -- --cwd . --session-id demo-session
 npm run dump-session-state -- --session-id demo-session
 ```
 

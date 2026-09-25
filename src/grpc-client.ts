@@ -3,6 +3,7 @@
 
 import { existsSync } from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import * as grpc from "@grpc/grpc-js";
 import * as protoLoader from "@grpc/proto-loader";
 import { parseJsonObject, readArray, readFiniteNumber, readOptionalString, readPrimitiveArray } from "./json.js";
@@ -35,24 +36,21 @@ type GrpcUnaryClient = Record<
 // LoadedGrpcServices groups the vulcan-host gRPC service clients used by this extension.
 // LoadedGrpcServices 汇总该扩展使用的 vulcan-host gRPC 服务客户端。
 interface LoadedGrpcServices {
-  mcp: GrpcUnaryClient;
   hostAdapter: GrpcUnaryClient;
   vmm: GrpcUnaryClient;
 }
 
-// DEFAULT_PROTO_CANDIDATES covers the local development layout used by this workspace.
-// DEFAULT_PROTO_CANDIDATES 覆盖当前工作区使用的本地开发布局。
-const DEFAULT_PROTO_CANDIDATES = [
-  "D:/projects/vulcan-mcp-client/proto/v1/mcp_service.proto",
-  path.resolve(process.cwd(), "../vulcan-mcp-client/proto/v1/mcp_service.proto"),
-];
+// PLUGIN_PROTO_DIRECTORY locates the protocol files shipped with this extension.
+// PLUGIN_PROTO_DIRECTORY 定位随此扩展一起分发的协议文件目录。
+const PLUGIN_PROTO_DIRECTORY = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../proto/v1");
 
-// DEFAULT_VMM_PROTO_CANDIDATES covers the sibling vmm.proto used by the raw VMM service client.
-// DEFAULT_VMM_PROTO_CANDIDATES 覆盖原始 VMM 服务客户端使用的同级 vmm.proto。
-const DEFAULT_VMM_PROTO_CANDIDATES = [
-  "D:/projects/vulcan-mcp-client/proto/v1/vmm.proto",
-  path.resolve(process.cwd(), "../vulcan-mcp-client/proto/v1/vmm.proto"),
-];
+// DEFAULT_PROTO_CANDIDATES resolves the bundled MCP service contract independently of the caller's working directory.
+// DEFAULT_PROTO_CANDIDATES 从插件自带文件解析 MCP 服务协议，不依赖调用方的工作目录。
+const DEFAULT_PROTO_CANDIDATES = [path.join(PLUGIN_PROTO_DIRECTORY, "mcp_service.proto")];
+
+// DEFAULT_VMM_PROTO_CANDIDATES resolves the bundled VMM service contract independently of the caller's working directory.
+// DEFAULT_VMM_PROTO_CANDIDATES 从插件自带文件解析 VMM 服务协议，不依赖调用方的工作目录。
+const DEFAULT_VMM_PROTO_CANDIDATES = [path.join(PLUGIN_PROTO_DIRECTORY, "vmm.proto")];
 
 // DynamicGrpcVulcanHostClient calls the vulcan-host gRPC surface through proto-loader.
 // DynamicGrpcVulcanHostClient 通过 proto-loader 调用 vulcan-host gRPC 能力面。
@@ -63,10 +61,10 @@ export class DynamicGrpcVulcanHostClient {
   // 构造函数保存归一化配置，让服务加载保持惰性且低成本。
   constructor(private readonly config: ResolvedVulcanQwencodeConfig) {}
 
-  // health checks the generic MCP service health endpoint.
-  // health 检查通用 MCP 服务健康端点。
+  // health checks the VMM gRPC health endpoint.
+  // health 检查 VMM gRPC 健康端点。
   async health(): Promise<VulcanStatus> {
-    const response = await this.callUnary<Record<string, unknown>>(this.loadServices().mcp, "Healthz", {});
+    const response = await this.callUnary<Record<string, unknown>>(this.loadServices().vmm, "Healthz", {});
     return {
       ok: response.status === "ok",
       message: String(response.status ?? "unknown"),
@@ -359,9 +357,6 @@ export class DynamicGrpcVulcanHostClient {
     const loaded = grpc.loadPackageDefinition(packageDefinition) as Record<string, unknown>;
     const namespace = (((loaded.vulcan as Record<string, unknown>)?.mcp as Record<string, unknown>)?.v1 ??
       {}) as Record<string, unknown>;
-    const McpService = namespace.McpService as
-      | (new (target: string, credentials: grpc.ChannelCredentials) => GrpcUnaryClient)
-      | undefined;
     const HostAdapterService = namespace.HostAdapterService as
       | (new (target: string, credentials: grpc.ChannelCredentials) => GrpcUnaryClient)
       | undefined;
@@ -369,13 +364,12 @@ export class DynamicGrpcVulcanHostClient {
     const VMMService = vmmNamespace.VMMService as
       | (new (target: string, credentials: grpc.ChannelCredentials) => GrpcUnaryClient)
       | undefined;
-    if (!McpService || !HostAdapterService || !VMMService) {
-      throw new Error("vulcan-host proto does not expose McpService, HostAdapterService, and VMMService.");
+    if (!HostAdapterService || !VMMService) {
+      throw new Error("vulcan-host proto does not expose HostAdapterService and VMMService.");
     }
     const endpoint = normalizeGrpcEndpoint(this.config.endpoint);
     const credentials = grpc.credentials.createInsecure();
     this.services = {
-      mcp: new McpService(endpoint, credentials),
       hostAdapter: new HostAdapterService(endpoint, credentials),
       vmm: new VMMService(endpoint, credentials),
     };
@@ -389,21 +383,21 @@ export function createVulcanHostClient(config: ResolvedVulcanQwencodeConfig): Dy
   return new DynamicGrpcVulcanHostClient(config);
 }
 
-// resolveProtoPath resolves the proto path from config, environment, or local workspace defaults.
-// resolveProtoPath 从配置、环境变量或本地工作区默认值解析 proto 路径。
+// resolveProtoPath resolves the proto path from config, environment, or the bundled protocol file.
+// resolveProtoPath 从配置、环境变量或插件自带的协议文件解析 proto 路径。
 function resolveProtoPath(config: ResolvedVulcanQwencodeConfig): string {
   const candidates = [config.protoPath, ...DEFAULT_PROTO_CANDIDATES].filter(Boolean) as string[];
   const found = candidates.find((candidate) => existsSync(candidate));
   if (!found) {
     throw new Error(
-      "Vulcan proto path not found. Set VULCAN_HOST_PROTO_PATH or config protoPath to vulcan-mcp-client/proto/v1/mcp_service.proto.",
+      "Bundled mcp_service.proto was not found. Reinstall the complete extension or set VULCAN_HOST_PROTO_PATH / config protoPath.",
     );
   }
   return found;
 }
 
-// resolveVmmProtoPath resolves the sibling vmm.proto path used by the raw VMM service client.
-// resolveVmmProtoPath 解析原始 VMM 服务客户端使用的同级 vmm.proto 路径。
+// resolveVmmProtoPath resolves the configured or bundled VMM protocol file.
+// resolveVmmProtoPath 解析用户配置或插件自带的 VMM 协议文件。
 function resolveVmmProtoPath(config: ResolvedVulcanQwencodeConfig, mcpProtoPath: string): string {
   const sibling = path.join(path.dirname(mcpProtoPath), "vmm.proto");
   const configured =
@@ -416,7 +410,7 @@ function resolveVmmProtoPath(config: ResolvedVulcanQwencodeConfig, mcpProtoPath:
   const found = candidates.find((candidate) => existsSync(candidate));
   if (!found) {
     throw new Error(
-      "VMM proto path not found. Ensure vulcan-mcp-client/proto/v1/vmm.proto exists next to mcp_service.proto.",
+      "Bundled vmm.proto was not found. Reinstall the complete extension or place vmm.proto next to the configured mcp_service.proto.",
     );
   }
   return found;

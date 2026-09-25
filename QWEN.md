@@ -21,6 +21,8 @@
   - `VULCAN_VMM_DEFAULT_USER_ID`
   - `VULCAN_VMM_DEFAULT_PROJECT_ID`
 
+扩展自带 gRPC 协议定义；除非需要覆盖协议版本，否则无需设置 `VULCAN_HOST_PROTO_PATH`。记忆功能仍需要可连接的 Vulcan Host gRPC 服务。
+
 ## 会话同步点
 
 - `UserPromptSubmit`：预检查、画像注入、记忆召回
