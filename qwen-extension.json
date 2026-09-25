@@ -1,0 +1,34 @@
+{
+  "name": "vulcan-qwencode",
+  "version": "0.1.0",
+  "contextFileName": "QWEN.md",
+  "commands": "commands",
+  "skills": "skills",
+  "hooks": "hooks/hooks.json",
+  "settings": [
+    {
+      "name": "Vulcan gRPC Endpoint",
+      "description": "Vulcan Host 的 gRPC 地址，例如 127.0.0.1:19202",
+      "envVar": "VULCAN_HOST_GRPC_ENDPOINT",
+      "sensitive": false
+    },
+    {
+      "name": "Vulcan Proto Path",
+      "description": "mcp_service.proto 的绝对路径，默认会自动探测 D:/projects/vulcan-mcp-client/proto/v1/mcp_service.proto",
+      "envVar": "VULCAN_HOST_PROTO_PATH",
+      "sensitive": false
+    },
+    {
+      "name": "Default VMM User",
+      "description": "默认的 VMM 用户 ID 或用户引用",
+      "envVar": "VULCAN_VMM_DEFAULT_USER_ID",
+      "sensitive": false
+    },
+    {
+      "name": "Default VMM Project",
+      "description": "默认的 VMM 项目 ID 或项目引用",
+      "envVar": "VULCAN_VMM_DEFAULT_PROJECT_ID",
+      "sensitive": false
+    }
+  ]
+}

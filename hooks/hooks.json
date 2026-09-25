@@ -1,0 +1,78 @@
+{
+  "SessionStart": [
+    {
+      "matcher": "*",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "node \"${CLAUDE_PLUGIN_ROOT}/dist/cli.js\" hook SessionStart",
+          "name": "vulcan-qwencode-session-start",
+          "timeout": 15000
+        }
+      ]
+    }
+  ],
+  "UserPromptSubmit": [
+    {
+      "hooks": [
+        {
+          "type": "command",
+          "command": "node \"${CLAUDE_PLUGIN_ROOT}/dist/cli.js\" hook UserPromptSubmit",
+          "name": "vulcan-qwencode-user-prompt-submit",
+          "timeout": 30000,
+          "statusMessage": "Vulcan 记忆预检查中"
+        }
+      ]
+    }
+  ],
+  "Stop": [
+    {
+      "hooks": [
+        {
+          "type": "command",
+          "command": "node \"${CLAUDE_PLUGIN_ROOT}/dist/cli.js\" hook Stop",
+          "name": "vulcan-qwencode-stop",
+          "timeout": 30000,
+          "statusMessage": "Vulcan 回合回写中"
+        }
+      ]
+    }
+  ],
+  "StopFailure": [
+    {
+      "hooks": [
+        {
+          "type": "command",
+          "command": "node \"${CLAUDE_PLUGIN_ROOT}/dist/cli.js\" hook StopFailure",
+          "name": "vulcan-qwencode-stop-failure",
+          "timeout": 15000
+        }
+      ]
+    }
+  ],
+  "PostCompact": [
+    {
+      "hooks": [
+        {
+          "type": "command",
+          "command": "node \"${CLAUDE_PLUGIN_ROOT}/dist/cli.js\" hook PostCompact",
+          "name": "vulcan-qwencode-post-compact",
+          "timeout": 15000
+        }
+      ]
+    }
+  ],
+  "SessionEnd": [
+    {
+      "matcher": "*",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "node \"${CLAUDE_PLUGIN_ROOT}/dist/cli.js\" hook SessionEnd",
+          "name": "vulcan-qwencode-session-end",
+          "timeout": 15000
+        }
+      ]
+    }
+  ]
+}
